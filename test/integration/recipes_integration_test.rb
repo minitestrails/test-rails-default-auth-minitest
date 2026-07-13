@@ -5,6 +5,7 @@ class RecipeIntegrationTest < ActionDispatch::IntegrationTest
   test "visits the list" do
     get recipes_url
     assert_response :success
+    assert_match "Recipes", response.body
     assert_select "#recipes div[id^='recipe_']", count: Recipe.count
   end
 
@@ -20,6 +21,23 @@ class RecipeIntegrationTest < ActionDispatch::IntegrationTest
 
     assert_no_difference("Recipe.count") do
       post recipes_url, params: { recipe: { title: "Sneaky soup" } }
+    end
+    assert_redirected_to new_session_url
+  end
+
+  test "guest cannot update a recipe" do
+    recipe = recipes(:pancakes)
+
+    patch recipe_url(recipe), params: { recipe: { title: "Hacked pancakes" } }
+    assert_redirected_to new_session_url
+    assert_equal "Pancakes", recipe.reload.title
+  end
+
+  test "guest cannot destroy a recipe" do
+    recipe = recipes(:lentil_soup)
+
+    assert_no_difference("Recipe.count") do
+      delete recipe_url(recipe)
     end
     assert_redirected_to new_session_url
   end
@@ -44,9 +62,7 @@ class RecipeIntegrationTest < ActionDispatch::IntegrationTest
     assert_redirected_to recipe_url(recipe)
     assert_equal "Pancakes", recipe.reload.title
 
-    assert_no_difference("Recipe.count") do
-      patch recipe_url(recipe), params: { recipe: { title: "Hacked pancakes" } }
-    end
+    patch recipe_url(recipe), params: { recipe: { title: "Hacked pancakes" } }
     assert_redirected_to recipe_url(recipe)
     assert_equal "Pancakes", recipe.reload.title
   end
@@ -59,6 +75,7 @@ class RecipeIntegrationTest < ActionDispatch::IntegrationTest
       delete recipe_url(recipe)
     end
     assert_redirected_to recipe_url(recipe)
+    assert_equal "Pancakes", recipe.reload.title
   end
 
   test "updates a recipe" do
@@ -82,5 +99,6 @@ class RecipeIntegrationTest < ActionDispatch::IntegrationTest
       delete recipe_url(recipe)
     end
     assert_redirected_to recipes_url
+    refute_match recipes(:pancakes).title, response.body
   end
 end

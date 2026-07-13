@@ -2,7 +2,7 @@
 require "test_helper"
 
 class SessionIntegrationTest < ActionDispatch::IntegrationTest
-  test "signs in with valid credentials" do
+  test "signs in" do
     get new_session_url
     assert_response :success
 
@@ -16,9 +16,6 @@ class SessionIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects invalid password" do
-    get new_session_url
-    assert_response :success
-
     post session_url, params: {
       email_address: users(:alice).email_address,
       password: "wrong"
