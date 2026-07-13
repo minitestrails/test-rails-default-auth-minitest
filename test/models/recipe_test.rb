@@ -20,7 +20,7 @@ class RecipeTest < ActiveSupport::TestCase
   end
 
   test "allows a nil prep_time" do
-    recipe = Recipe.new(title: "Soup", prep_time: nil)
+    recipe = Recipe.new(title: "Soup", prep_time: nil, user: users(:alice))
 
     assert recipe.valid?
   end
@@ -33,7 +33,7 @@ class RecipeTest < ActiveSupport::TestCase
   end
 
   test "allows a nil servings" do
-    recipe = Recipe.new(title: "Soup", servings: nil)
+    recipe = Recipe.new(title: "Soup", servings: nil, user: users(:alice))
 
     assert recipe.valid?
   end

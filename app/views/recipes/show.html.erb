@@ -17,6 +17,9 @@
   <% end %>
 </dl>
 
-<%= link_to "Edit this recipe", edit_recipe_path(@recipe) %>
 <%= link_to "Back to recipes", recipes_path %>
-<%= button_to "Destroy this recipe", @recipe, method: :delete, data: { turbo_confirm: "Are you sure?" } %>
+
+<% if current_user == @recipe.user %>
+  <%= link_to "Edit this recipe", edit_recipe_path(@recipe) %>
+  <%= button_to "Destroy this recipe", @recipe, method: :delete, data: { turbo_confirm: "Are you sure?" } %>
+<% end %>
