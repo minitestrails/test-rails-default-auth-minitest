@@ -35,4 +35,3 @@ class SessionIntegrationTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url
   end
 end
-
