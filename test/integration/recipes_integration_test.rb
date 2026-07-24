@@ -1,63 +1,104 @@
+# test/integration/recipe_integration_test.rb
 require "test_helper"
 
-# TODO: Uncomment tests when adding tests for the authenticated users in a new branch.
-class RecipesIntegrationTest < ActionDispatch::IntegrationTest
+class RecipeIntegrationTest < ActionDispatch::IntegrationTest
   test "visits the list" do
     get recipes_url
     assert_response :success
-    assert_match recipes(:pancakes).title, response.body
+    assert_match "Recipes", response.body
     assert_select "#recipes div[id^='recipe_']", count: Recipe.count
   end
 
-  # test "creates a recipe" do
-  #   get new_recipe_url
-  #   assert_response :success
-
-  #   assert_difference("Recipe.count", 1) do
-  #     post recipes_url, params: { recipe: { title: "Lentil soup" } }
-  #   end
-
-  #   assert_redirected_to recipe_url(Recipe.last)
-  #   follow_redirect!
-  #   assert_response :success
-  # end
-
-  test "shows a recipe" do
+  test "visits the recipe detail" do
     get recipe_url(recipes(:pancakes))
     assert_response :success
+    assert_match recipes(:pancakes).title, response.body
   end
 
-  # test "updates a recipe" do
-  #   recipe = recipes(:pancakes)
+  test "guest cannot create a recipe" do
+    get new_recipe_url
+    assert_redirected_to new_session_url
 
-  #   get edit_recipe_url(recipe)
-  #   assert_response :success
+    assert_no_difference("Recipe.count") do
+      post recipes_url, params: { recipe: { title: "Sneaky soup" } }
+    end
+    assert_redirected_to new_session_url
+  end
 
-  #   patch recipe_url(recipe), params: { recipe: { title: "Extra fluffy pancakes" } }
-  #   assert_redirected_to recipe_url(recipe)
-  #   follow_redirect!
-  #   assert_response :success
-  #   assert_equal "Extra fluffy pancakes", recipe.reload.title
-  # end
+  test "guest cannot update a recipe" do
+    recipe = recipes(:pancakes)
 
-  # test "destroys a recipe" do
-  #   recipe = recipes(:lentil_soup)
+    patch recipe_url(recipe), params: { recipe: { title: "Hacked pancakes" } }
+    assert_redirected_to new_session_url
+    assert_equal "Pancakes", recipe.reload.title
+  end
 
-  #   assert_difference("Recipe.count", -1) do
-  #     delete recipe_url(recipe)
-  #   end
-  #   assert_redirected_to recipes_url
-  # end
+  test "guest cannot destroy a recipe" do
+    recipe = recipes(:lentil_soup)
 
-  # test "does not create a recipe with invalid data" do
-  #   get new_recipe_url
-  #   assert_response :success
+    assert_no_difference("Recipe.count") do
+      delete recipe_url(recipe)
+    end
+    assert_redirected_to new_session_url
+  end
 
-  #   assert_no_difference("Recipe.count") do
-  #     post recipes_url, params: { recipe: { title: "" } }
-  #   end
+  test "creates a recipe" do
+    sign_in_as users(:alice)
 
-  #   assert_response :unprocessable_entity
-  #   assert_match /prohibited this recipe from being saved/i, response.body
-  # end
+    assert_difference("Recipe.count", 1) do
+      post recipes_url, params: { recipe: { title: "Alice's salad" } }
+    end
+
+    recipe = Recipe.last
+    assert_redirected_to recipe_url(recipe)
+    assert_equal users(:alice), recipe.user
+  end
+
+  test "non-owner cannot update a recipe" do
+    sign_in_as users(:bob)
+    recipe = recipes(:pancakes)
+
+    get edit_recipe_url(recipe)
+    assert_redirected_to recipe_url(recipe)
+    assert_equal "Pancakes", recipe.reload.title
+
+    patch recipe_url(recipe), params: { recipe: { title: "Hacked pancakes" } }
+    assert_redirected_to recipe_url(recipe)
+    assert_equal "Pancakes", recipe.reload.title
+  end
+
+  test "non-owner cannot destroy a recipe" do
+    sign_in_as users(:bob)
+    recipe = recipes(:pancakes)
+
+    assert_no_difference("Recipe.count") do
+      delete recipe_url(recipe)
+    end
+    assert_redirected_to recipe_url(recipe)
+    assert_equal "Pancakes", recipe.reload.title
+  end
+
+  test "updates a recipe" do
+    sign_in_as users(:alice)
+    recipe = recipes(:pancakes)
+
+    get edit_recipe_url(recipe)
+    assert_response :success
+
+    patch recipe_url(recipe), params: { recipe: { title: "Updated pancakes" } }
+    assert_redirected_to recipe_url(recipe)
+    follow_redirect!
+    assert_match "Updated pancakes", response.body
+  end
+
+  test "destroys a recipe" do
+    sign_in_as users(:alice)
+    recipe = recipes(:pancakes)
+
+    assert_difference("Recipe.count", -1) do
+      delete recipe_url(recipe)
+    end
+    assert_redirected_to recipes_url
+    refute_match recipes(:pancakes).title, response.body
+  end
 end
